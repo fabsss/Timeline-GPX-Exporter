@@ -1,25 +1,66 @@
 # Timeline-GPX-Exporter
-Convert Google Timelines new JSON exported from an Android device to daily GPX log files
+Convert Google Timeline JSON exported from an Android device into GPX files (daily or combined).
 
-I created this because I needed an easy way to find time stamps from the last year of my raw timeline data, a function that irritatingly no longer exists since timeline went device only with the now very limited Android Maps Timeline interface.
+This script reads these types of files:
+- `Timeline.json` (newer format)
+- `timeline.json` (case variants)
+- `location-history.json` (legacy format with `locations` array)
+- `locationHistory.json`, etc.
 
-1. Export timeline data from your Android device. 
+## Quick start
+1. Export timeline from Android: **Settings > Location > Timeline > Export Timeline data**.
+2. Copy the JSON file into the script folder (same directory as `Timeline-GPX-Exporter.py`).
+3. (recommended) Create and activate a virtual environment:
+   - `python -m venv venv`
+   - `venv\Scripts\Activate.ps1` (PowerShell) or `venv\Scripts\activate` (cmd)
+4. Install dependencies:
+   - `python -m pip install -r requirements.txt`
+5. Run script as desired:
+   - `python Timeline-GPX-Exporter.py`
 
-To do this, on your Android device go to **settings > Location > Timeline > Export Timeline data**.  
+## Command-line usage
+- Default (auto-detect input, per-day output, no overwrite):
+  - `python Timeline-GPX-Exporter.py`
+- With date range (European format):
+  - `python Timeline-GPX-Exporter.py --from 13/05/2023 --to 16/05/2023`
+- Single combined GPX output for range:
+  - `python Timeline-GPX-Exporter.py --from 13/05/2023 --to 16/05/2023 --single`
+- Force overwriting existing output:
+  - `python Timeline-GPX-Exporter.py --overwrite`
+- Explicit input file:
+  - `python Timeline-GPX-Exporter.py --input location-history.json`
+- Custom output folder:
+  - `python Timeline-GPX-Exporter.py --output .\MyGPX`
 
-2. Place the exported Timeline.json file into the same folder as Timeline-GPX-Exporter.py. 
-   * If this process instead produces a location-history.json file thats OK, the script will automatically detect and parse this format as well. Do not rename the file. 
+## Interactive mode (no flags)
+If you run with no arguments, the script prompts for:
+- output mode (multiple daily vs single file)
+- full range or custom date range (start/end in `DD/MM/YYYY`)
+- overwrite existing files (yes/no)
+- optional input filename (blank for auto-detect)
+- optional output directory (default `GPX_Output`)
 
-3. Run Timeline-GPX-Exporter.py script. Daily GPX logs with be generated in ./GPX_Output with the format YYYY-MM-DD.gpx. 
+Example interactive:
+1. `venv\Scripts\python.exe Timeline-GPX-Exporter.py`
+2. Answer the prompts.
 
-4. Open the GPX logs in your veiewer of choice. 
-GPXsee is a good option, however you may need to disable Elimiate GPS outliers from settings > Data > Filtering 
-and disable pause dectection from settings > Data > Pause Detection.
+## Output behavior
+- Default: one file per date `YYYY-MM-DD.gpx` under `GPX_Output`.
+- Single mode: `YYYY-MM-DD_YYYY-MM-DD.gpx` (date range from selected bounds).
+- Overwrite disabled: existing files are skipped and reported.
+- Overwrite enabled: existing files are replaced.
 
-Example: Place both Timeline-GPX-Exporter.py and Timeline.json in C:/Timeline
+## Internal parser support
+- `parse_json` handles `semanticSegments` > `timelinePath` points.
+- `parse_json2` handles `locations` arrays and `timelineObjects` or old/outdated variants.
+- GPS coordinates are normalized (`°`, `Â`, `geo:` cleanup).
 
-         Open command prompt
-         >cd C:\Timeline
-         >python Timeline-GPX-Exporter.py
+## Notes
+- Output GPX may not pass strict validators depending on viewer, but works in standard GPX apps.
+- The script preserves previous behavior while adding safety, interactive flow, and explicit control.
 
-The GPX log files produced are not perfect, some less forgiving viewers might reject them. However it did what I needed it to do perfectly, so as far as I'm concerned it's certified good enough. If it's good enough for you too, then great, you're welcome. If it's not, well too bad, I have what I needed from it and you're more than welcome to take it and adapt it to suit your needs.
+## Example run
+`venv\Scripts\python.exe Timeline-GPX-Exporter.py --from 01/06/2023 --to 05/06/2023 --single --overwrite`
+
+This writes one combined GPX file for the range, replacing existing output file if present.
+
